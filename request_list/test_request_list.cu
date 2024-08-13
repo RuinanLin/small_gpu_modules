@@ -6,7 +6,7 @@
 #define BLOCK_SIZE  256
 #define WARP_SIZE   32
 
-#define N_REQUESTS_EACH_WARP    1
+#define N_REQUESTS_EACH_WARP    100
 
 __device__ void server_launch(RequestList request_list) {
     int thread_lane = threadIdx.x & (WARP_SIZE-1);
