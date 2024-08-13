@@ -64,7 +64,6 @@ __device__ vidType* RequestList::request(int sender_warp_id, int dest_id) {
     if (thread_lane == 0) {
         nvshmem_int_p(put_addr, 1, dest_id);
     } __syncwarp();     // TODO: can we remove it?
-    nvshmem_fence();    // TODO: can we remove it?
 
     if (thread_lane == 0) {
         printf("[%d, %d]: put request to (%d, %d)\n", nvshmem_my_pe(), sender_warp_id, dest_id, (int)put_addr);
@@ -89,7 +88,6 @@ __device__ vidType* RequestList::request(int sender_warp_id, int dest_id) {
     if (thread_lane == 0) {
         nvshmem_put64(get_addr, &null_p, 1, dest_id);
     } __syncwarp();     // TODO: can we remove it?
-    nvshmem_fence();    // TODO: can we remove it?
 
     return resp_addr;
 }
@@ -116,7 +114,6 @@ __device__ int RequestList::check(int src_id, int sender_warp_id) {
         if (thread_lane == 0) {
             *signal_slot = 0;
         } __syncwarp();     // TODO: can we remove it?
-        nvshmem_fence();    // TODO: can we remove it?
 
         if (thread_lane == 0) {
             printf("[%d]: checked and found ([%d, %d], %d)\n", nvshmem_my_pe(), src_id, sender_warp_id, (int)signal_slot);
@@ -134,7 +131,6 @@ __device__ void RequestList::respond(int src_id, int sender_warp_id, vidType *se
     vidType **resp_slot = get_resp_slot(src_id_here, sender_warp_id);
     if (thread_lane == 0) {
         *resp_slot = send_recv_slot;
-        nvshmem_fence();
     } __syncwarp(); // TODO: can we remove it?
 
     if (thread_lane == 0) {
@@ -145,7 +141,6 @@ __device__ void RequestList::respond(int src_id, int sender_warp_id, vidType *se
 __device__ int RequestList::finished() {
     int thread_lane = threadIdx.x & (WARP_SIZE-1);
     
-    nvshmem_fence();
     if (*end_counter == 0) {
         if (thread_lane == 0) {
             printf("finished!!!\n");

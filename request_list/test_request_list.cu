@@ -14,8 +14,8 @@ __device__ void server_launch(RequestList request_list) {
     int n_warps_each_pe = 1 * BLOCK_SIZE / WARP_SIZE;
     int npes = nvshmem_n_pes();
 
-    // vidType *resp_addr = (vidType *)36;
     vidType *resp_addr = new vidType[16];
+    vidType *start = resp_addr;
 
     int warp_id = threadIdx.x / WARP_SIZE;
     if (warp_id == 0) {
@@ -29,8 +29,11 @@ __device__ void server_launch(RequestList request_list) {
                 }
             }
             if (request_list.finished() == 1) {
+                vidType *end = resp_addr;
+                int server_final_count = end - start;
+
                 if (thread_lane == 0) {
-                    printf("Server finished.\n");
+                    printf("Server finished. server_final_count = %d\n", server_final_count);
                 } __syncwarp(); // TODO: can we remove it?
 
                 break;
