@@ -65,9 +65,9 @@ __device__ vidType* RequestList::request(int sender_warp_id, int dest_id) {
         nvshmem_int_p(put_addr, 1, dest_id);
     } __syncwarp();     // TODO: can we remove it?
 
-    if (thread_lane == 0) {
-        printf("[%d, %d]: put request to (%d, %d)\n", nvshmem_my_pe(), sender_warp_id, dest_id, (int)put_addr);
-    } __syncwarp();     // TODO: can we remove it?
+    // if (thread_lane == 0) {
+    //     printf("[%d, %d]: put request to (%d, %d)\n", nvshmem_my_pe(), sender_warp_id, dest_id, (int)put_addr);
+    // } __syncwarp();     // TODO: can we remove it?
 
     // wait for server's response
     vidType *resp_addr = NULL;
@@ -79,9 +79,9 @@ __device__ vidType* RequestList::request(int sender_warp_id, int dest_id) {
         // resp_addr = (vidType *)nvshmem_uint64_g((const uint64_t *)get_addr, dest_id);
     } while (resp_addr == NULL);
 
-    if (thread_lane == 1) {
-        printf("[%d, %d]: got address from (%d, %d), addr = %ld\n", nvshmem_my_pe(), sender_warp_id, dest_id, (int)get_addr, (long int)resp_addr);
-    } __syncwarp();
+    // if (thread_lane == 1) {
+    //     printf("[%d, %d]: got address from (%d, %d), addr = %ld\n", nvshmem_my_pe(), sender_warp_id, dest_id, (int)get_addr, (long int)resp_addr);
+    // } __syncwarp();
 
     // reset resp slot
     vidType *null_p = NULL;
@@ -115,9 +115,9 @@ __device__ int RequestList::check(int src_id, int sender_warp_id) {
             *signal_slot = 0;
         } __syncwarp();     // TODO: can we remove it?
 
-        if (thread_lane == 0) {
-            printf("[%d]: checked and found ([%d, %d], %d)\n", nvshmem_my_pe(), src_id, sender_warp_id, (int)signal_slot);
-        } __syncwarp();
+        // if (thread_lane == 0) {
+        //     printf("[%d]: checked and found ([%d, %d], %d)\n", nvshmem_my_pe(), src_id, sender_warp_id, (int)signal_slot);
+        // } __syncwarp();
 
         return 1;
     }
@@ -133,18 +133,18 @@ __device__ void RequestList::respond(int src_id, int sender_warp_id, vidType *se
         *resp_slot = send_recv_slot;
     } __syncwarp(); // TODO: can we remove it?
 
-    if (thread_lane == 0) {
-        printf("[%d]: respond to ([%d, %d], %d), addr = %d\n", nvshmem_my_pe(), src_id, sender_warp_id, (int)resp_slot, (int)send_recv_slot);
-    } __syncwarp(); // TODO: can we remove it?
+    // if (thread_lane == 0) {
+    //     printf("[%d]: respond to ([%d, %d], %d), addr = %d\n", nvshmem_my_pe(), src_id, sender_warp_id, (int)resp_slot, (int)send_recv_slot);
+    // } __syncwarp(); // TODO: can we remove it?
 }
 
 __device__ int RequestList::finished() {
     int thread_lane = threadIdx.x & (WARP_SIZE-1);
     
     if (*end_counter == 0) {
-        if (thread_lane == 0) {
-            printf("finished!!!\n");
-        } __syncwarp();
+        // if (thread_lane == 0) {
+        //     printf("finished!!!\n");
+        // } __syncwarp();
 
         return 1;
     }

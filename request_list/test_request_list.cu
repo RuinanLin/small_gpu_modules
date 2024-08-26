@@ -62,9 +62,7 @@ __device__ void sender_launch(RequestList request_list) {
     request_list.sender_quit();
 }
 
-__global__ void test_request_list(RequestList request_list) {
-    int thread_lane = threadIdx.x & (WARP_SIZE-1);
-    
+__global__ void test_request_list(RequestList request_list) {    
     int mype = nvshmem_my_pe();
     if (mype == 0) {
         server_launch(request_list);
