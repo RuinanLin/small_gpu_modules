@@ -16,6 +16,7 @@ protected:
     vidType *buffer;    // [ n_slots_per_warp, n_recver_warps, (1+slot_size) ]
     int *end_counter;   // a counter that counts down. when reaching 0, all the servers have ended.
 
+    int total_num_slots;
     int *next_slot_id_addr;
 
     __device__ int is_occupied(int slot_id_per_warp, int recver_warp_id) { return occupied[slot_id_per_warp * n_recver_warps + recver_warp_id]; }
@@ -37,7 +38,7 @@ public:
 };
 
 SendRecvBuffer::SendRecvBuffer(int _ndevices, int _slot_size, int _n_slots_per_warp, int _n_recver_warps)
-: ndevices(_ndevices), slot_size(_slot_size), n_slots_per_warp(_n_slots_per_warp), n_recver_warps(_n_recver_warps) {
+: ndevices(_ndevices), slot_size(_slot_size), n_slots_per_warp(_n_slots_per_warp), n_recver_warps(_n_recver_warps), total_num_slots(_n_slots_per_warp * _n_recver_warps) {
     occupied = (int *)nvshmem_malloc(n_slots_per_warp * n_recver_warps * sizeof(int));
     int *occupied_h = (int *)malloc(n_slots_per_warp * n_recver_warps * sizeof(int));
     for (int i = 0; i < n_slots_per_warp * n_recver_warps; i++) {
@@ -69,17 +70,17 @@ __device__ vidType* SendRecvBuffer::find_empty() {
         nvshmem_fence();    // TODO: can we remove it?
         __threadfence();    // TODO: can we remove it?
         int next_slot_id = *next_slot_id_addr;
-        if (occupied[next_slot_id] == 0) {
+        if (occupied[next_slot_id] == 0 && buffer[next_slot_id * (1+slot_size)] == 0) {
             if (thread_lane == 0) {
                 occupied[next_slot_id] = 1;     // TODO: multi-warp version
                 nvshmem_fence();    // TODO: can we remove it?
-                *next_slot_id_addr = next_slot_id + 1;  // TODO: multi-warp version
+                *next_slot_id_addr = (next_slot_id + 1) % total_num_slots;  // TODO: multi-warp version
                 __threadfence();    // TODO: can we remove it?
             } __syncwarp();     // TODO: can we remove it?
             return &buffer[next_slot_id * (1+slot_size)];
         } else {
             if (thread_lane == 0) {
-                *next_slot_id_addr = next_slot_id + 1;  // TODO: multi-warp version
+                *next_slot_id_addr = (next_slot_id + 1) % total_num_slots;  // TODO: multi-warp version
                 __threadfence();    // TODO: can we remove it?
             } __syncwarp();     // TODO: can we remove it?
         }
@@ -90,8 +91,11 @@ __device__ vidType* SendRecvBuffer::find_empty() {
 __device__ void SendRecvBuffer::server_quit() {     // server quit is signalling recvers
     int thread_lane = threadIdx.x & (WARP_SIZE-1);
 
+    int old_val = *end_counter;
+    int new_val = old_val - 1;
     if (thread_lane == 0) {
-        (*end_counter)--;     // TODO: change it to a multi-warp case, which means that it should consider race
+        printf("old_val = %d, new_val = %d\n", old_val, new_val);
+        *end_counter = new_val;     // TODO: change it to a multi-warp case, which means that it should consider race
         __threadfence();    // TODO: can we remove it?
     } __syncwarp();     // TODO: can we remove it?
 }
@@ -99,6 +103,7 @@ __device__ void SendRecvBuffer::server_quit() {     // server quit is signalling
 // caller: recver warp
 __device__ vidType* SendRecvBuffer::check_msg(int recver_warp_id, int *slot_id_per_warp) {
     for (int i = 0; i < n_slots_per_warp; i++) {
+        nvshmem_fence();    // TODO: can we remove it?
         if (isvalid(i, recver_warp_id)) {
             *slot_id_per_warp = i;
             return get_msg(i, recver_warp_id);

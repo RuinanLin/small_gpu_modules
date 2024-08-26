@@ -8,7 +8,7 @@
 #define BLOCK_SIZE  256
 #define WARP_SIZE   32
 
-#define N_REQUESTS_EACH_WARP    1
+#define N_REQUESTS_EACH_WARP    2
 
 #define SLOT_SIZE   2
 #define N_SLOTS_PER_WARP    5
