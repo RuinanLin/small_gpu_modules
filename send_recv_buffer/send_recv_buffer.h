@@ -94,7 +94,6 @@ __device__ void SendRecvBuffer::server_quit() {     // server quit is signalling
     int old_val = *end_counter;
     int new_val = old_val - 1;
     if (thread_lane == 0) {
-        printf("old_val = %d, new_val = %d\n", old_val, new_val);
         *end_counter = new_val;     // TODO: change it to a multi-warp case, which means that it should consider race
         __threadfence();    // TODO: can we remove it?
     } __syncwarp();     // TODO: can we remove it?

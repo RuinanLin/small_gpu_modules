@@ -23,19 +23,19 @@ __device__ void server_launch(RequestList request_list, SendRecvBuffer send_recv
         for (int src_id = 1; src_id < npes; src_id++) {
             for (int sender_warp_id = 0; sender_warp_id < n_warps_each_pe; sender_warp_id++) {
                 if (request_list.check(src_id, sender_warp_id) == 1) {
-                    if (thread_lane == 0) {
-                        printf("server got request from [%d, %d]\n", src_id, sender_warp_id);
-                    } __syncwarp();
+                    // if (thread_lane == 0) {
+                    //     printf("server got request from [%d, %d]\n", src_id, sender_warp_id);
+                    // } __syncwarp();
 
                     vidType *resp_addr = send_recv_buffer.find_empty();
-                    if (thread_lane == 0) {
-                        printf("server found empty address %d\n", resp_addr);
-                    } __syncwarp();
+                    // if (thread_lane == 0) {
+                    //     printf("server found empty address %d\n", resp_addr);
+                    // } __syncwarp();
 
                     request_list.respond(src_id, sender_warp_id, resp_addr);
-                    if (thread_lane == 0) {
-                        printf("server respond to [%d, %d] with resp_addr %d\n", src_id, sender_warp_id, resp_addr);
-                    } __syncwarp();
+                    // if (thread_lane == 0) {
+                    //     printf("server respond to [%d, %d] with resp_addr %d\n", src_id, sender_warp_id, resp_addr);
+                    // } __syncwarp();
                 }
             }
         }
@@ -43,9 +43,9 @@ __device__ void server_launch(RequestList request_list, SendRecvBuffer send_recv
         // terminate
         if (request_list.finished() == 1) {
             send_recv_buffer.server_quit();
-            if (thread_lane == 0) {
-                printf("server quit\n");
-            } __syncwarp();
+            // if (thread_lane == 0) {
+            //     printf("server quit\n");
+            // } __syncwarp();
             break;
         }
     }
@@ -71,9 +71,9 @@ __device__ void recver_launch(SendRecvBuffer send_recv_buffer) {
 
         // check whether finished
         if (send_recv_buffer.finished() == 1) {
-            if (thread_lane == 0) {
-                printf("recver warp [%d] quit\n", recver_warp_id);
-            } __syncwarp();
+            // if (thread_lane == 0) {
+            //     printf("recver warp [%d] quit\n", recver_warp_id);
+            // } __syncwarp();
             return;
         }
     }
@@ -84,13 +84,13 @@ __device__ void sender_launch(RequestList request_list) {
     int sender_warp_id = threadIdx.x / WARP_SIZE;
     
     // make a request and send a message
-    for (int r = 0; r < N_REQUESTS_EACH_WARP; r++) {
+    for (int round = 0; round < N_REQUESTS_EACH_WARP; round++) {
         // destination pe: 0
         // get address
         vidType *send_addr = request_list.request(sender_warp_id, 0);
-        if (thread_lane == 0) {
-            printf("sender warp [%d, %d] got send_addr = %d\n", nvshmem_my_pe(), sender_warp_id, send_addr);
-        } __syncwarp();
+        // if (thread_lane == 2) {
+        //     printf("sender warp [%d, %d] got send_addr = %d, round: %d\n", nvshmem_my_pe(), sender_warp_id, (int)send_addr, round);
+        // } __syncwarp();
         // put message
         nvshmem_int32_p(send_addr+1, nvshmem_my_pe(), 0);
         nvshmem_int32_p(send_addr+2, sender_warp_id, 0);
@@ -98,16 +98,16 @@ __device__ void sender_launch(RequestList request_list) {
         // put valid
         nvshmem_int32_p(send_addr, 1, 0);
         nvshmem_fence();    // TODO: can we remove it?
-        if (thread_lane == 0) {
-            printf("sender warp [%d, %d] put message to %d\n", nvshmem_my_pe(), sender_warp_id, send_addr);
+        if (thread_lane == 3) {
+            printf("sender warp [%d, %d] put message to %d, round: %d\n", nvshmem_my_pe(), sender_warp_id, (int)send_addr, round);
         } __syncwarp();
     }
 
     // quit
     request_list.sender_quit();
-    if (thread_lane == 0) {
-        printf("sender warp [%d, %d] quit\n", nvshmem_my_pe(), sender_warp_id);
-    } __syncwarp();
+    // if (thread_lane == 0) {
+    //     printf("sender warp [%d, %d] quit\n", nvshmem_my_pe(), sender_warp_id);
+    // } __syncwarp();
 }
 
 __global__ void test_send_recv_buffer(RequestList request_list, SendRecvBuffer send_recv_buffer) {
