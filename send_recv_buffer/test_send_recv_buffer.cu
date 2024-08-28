@@ -56,24 +56,30 @@ __device__ void recver_launch(SendRecvBuffer send_recv_buffer) {
     int recver_warp_id = threadIdx.x / WARP_SIZE - 1;
     
     while (1) {
-        int slot_id_per_warp;
-        vidType *msg = send_recv_buffer.check_msg(recver_warp_id, &slot_id_per_warp);
-        if (msg) {
-            if (thread_lane == 2) {
-                printf("recver warp [%d] got from slot_id_per_warp = %d, pe[%d], sender_warp[%d]\n", recver_warp_id, slot_id_per_warp, msg[1], msg[2]);
-            } __syncwarp();
-
-            send_recv_buffer.turn_invalid(slot_id_per_warp, recver_warp_id);
-            if (thread_lane == 0) {
-                printf("recver warp [%d] turned slot %d invalid\n", recver_warp_id, slot_id_per_warp);
-            } __syncwarp();
+        // check whether server has finished
+        int finished = 0;
+        if (send_recv_buffer.finished() == 1) {
+            finished = 1;
         }
 
-        // check whether finished
-        if (send_recv_buffer.finished() == 1) {
-            // if (thread_lane == 0) {
-            //     printf("recver warp [%d] quit\n", recver_warp_id);
-            // } __syncwarp();
+        // check a round
+        vidType *msg;
+        for (int slot_id_per_warp = 0; slot_id_per_warp < N_SLOTS_PER_WARP; slot_id_per_warp++) {
+            msg = send_recv_buffer.check_msg(recver_warp_id, slot_id_per_warp);
+            if (msg) {
+                if (thread_lane == 2) {
+                    printf("recver warp [%d] got from slot_id_per_warp = %d, pe[%d], sender_warp[%d]\n", recver_warp_id, slot_id_per_warp, msg[1], msg[2]);
+                } __syncwarp();
+
+                send_recv_buffer.turn_invalid(slot_id_per_warp, recver_warp_id);
+                if (thread_lane == 0) {
+                    printf("recver warp [%d] turned slot %d invalid\n", recver_warp_id, slot_id_per_warp);
+                } __syncwarp();
+            }
+        }
+
+        // terminate
+        if (finished == 1) {
             return;
         }
     }

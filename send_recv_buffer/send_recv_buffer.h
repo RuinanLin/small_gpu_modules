@@ -32,7 +32,7 @@ public:
     __device__ void server_quit();
 
     // facing recvers
-    __device__ vidType *check_msg(int recver_warp_id, int *slot_id_per_warp);
+    __device__ vidType *check_msg(int recver_warp_id, int slot_id_per_warp);
     __device__ void turn_invalid(int slot_id_per_warp, int recver_warp_id);
     __device__ int finished();
 };
@@ -100,13 +100,10 @@ __device__ void SendRecvBuffer::server_quit() {     // server quit is signalling
 }
 
 // caller: recver warp
-__device__ vidType* SendRecvBuffer::check_msg(int recver_warp_id, int *slot_id_per_warp) {
-    for (int i = 0; i < n_slots_per_warp; i++) {
-        nvshmem_fence();    // TODO: can we remove it?
-        if (isvalid(i, recver_warp_id)) {
-            *slot_id_per_warp = i;
-            return get_msg(i, recver_warp_id);
-        }
+__device__ vidType* SendRecvBuffer::check_msg(int recver_warp_id, int slot_id_per_warp) {
+    nvshmem_fence();    // TODO: can we remove it?
+    if (isvalid(slot_id_per_warp, recver_warp_id)) {
+        return get_msg(slot_id_per_warp, recver_warp_id);
     }
     return NULL;
 }
