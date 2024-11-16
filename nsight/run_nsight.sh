@@ -1,0 +1,2 @@
+nvcc -o vector_add vector_add.cu -lineinfo -g
+srun --account=bcsh-delta-gpu --partition=gpuA100x4-interactive -G 1 -n 1 -N 1 --mem=240G nsys profile --stats=true --output=vector_add_report --force-overwrite true ./vector_add

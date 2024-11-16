@@ -90,16 +90,16 @@ __device__ void SenderLocalPushBuffer::update_v(vidType v, int sender_warp_id, i
 __device__ void SenderLocalPushBuffer::update(update_info_t update_info, int sender_warp_id, int v_partition_num) {
     int thread_lane = threadIdx.x & (WARP_SIZE-1);
     int dest_id_here = get_dest_id_here(v_partition_num);
-    if (thread_lane == 0) {
-        printf("sender [%d, %d] going to prepare meta.\n", nvshmem_my_pe(), sender_warp_id);
-    } __syncwarp();
+    // if (thread_lane == 0) {
+    //     printf("sender [%d, %d] going to prepare meta.\n", nvshmem_my_pe(), sender_warp_id);
+    // } __syncwarp();
     __threadfence();    // TODO: can we remove it?
     if (valid[sender_warp_id * (ndevices-1) + dest_id_here] == 0) {
         prepare_meta(update_info, sender_warp_id, v_partition_num);
     }
-    if (thread_lane == 0) {
-        printf("sender [%d, %d] successfully prepared meta.\n", nvshmem_my_pe(), sender_warp_id);
-    } __syncwarp();
+    // if (thread_lane == 0) {
+    //     printf("sender [%d, %d] successfully prepared meta.\n", nvshmem_my_pe(), sender_warp_id);
+    // } __syncwarp();
     update_v(update_info.v, sender_warp_id, v_partition_num);
 }
 
